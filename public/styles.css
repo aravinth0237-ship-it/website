@@ -235,6 +235,16 @@ body {
   box-shadow: 0 6px 18px var(--accent-glow);
 }
 
+.tab-btn.tab-has-new:not(.active) {
+  border-color: var(--accent-secondary);
+  color: var(--text-primary);
+}
+
+.tab-btn.tab-has-new:not(.active) .tab-count {
+  background: var(--badge-new-bg);
+  color: var(--badge-new-text);
+}
+
 .tab-count {
   display: inline-flex;
   align-items: center;

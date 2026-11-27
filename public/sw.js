@@ -1,4 +1,4 @@
-const CACHE_NAME = 'karur-cinemas-tracker-v2';
+const CACHE_NAME = 'karur-cinemas-tracker-v3';
 const APP_SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json', '/icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {

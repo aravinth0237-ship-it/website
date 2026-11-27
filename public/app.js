@@ -17,10 +17,14 @@
   let activeTab = 'all';
   let currentData = { lastChecked: null, openings: [] };
   let toastTimer = null;
+  let toastTargetTab = null;
   let testCleanupTimer = null;
   let testCountdownInterval = null;
   let activeTestExpiresAt = 0;
   let localTestPushTimers = [];
+  let localReleasePushTimers = [];
+  let eventsSource = null;
+  const notifiedReleaseKeys = new Set();
 
   const dom = {
     doomsdayBanner: document.getElementById('doomsday-banner'),
@@ -213,7 +217,7 @@
     if (newActive) {
       const newBadge = document.createElement('span');
       newBadge.className = 'badge badge-new';
-      newBadge.textContent = doomsday ? 'Doomsday 4D Alert' : 'New 48h';
+      newBadge.textContent = doomsday ? 'Doomsday Alert' : 'New';
       badges.appendChild(newBadge);
     }
 
@@ -383,6 +387,11 @@
     if (dom.countNew) dom.countNew.textContent = String(newCount);
     if (dom.countLive) dom.countLive.textContent = String(liveCount);
 
+    const newTabBtn = dom.tabButtons.find((btn) => btn.dataset.tab === 'new');
+    if (newTabBtn) {
+      newTabBtn.classList.toggle('tab-has-new', newCount > 0);
+    }
+
     if (dom.lastCheckedText) {
       dom.lastCheckedText.textContent = currentData.lastChecked
         ? `Last Checked: ${formatTimestamp(currentData.lastChecked)}`
@@ -418,7 +427,7 @@
       dom.emptyState.classList.remove('hidden');
       if (activeTab === 'new') {
         dom.emptyState.textContent =
-          'No brand-new movie or theater openings in the active 48-hour / 4-day window yet.';
+          'No new movie releases detected yet. Monitoring live...';
       } else if (activeTab === 'live') {
         dom.emptyState.textContent =
           'No live listings currently detected on https://karurcinemas.com. Click Check Now to scan.';
@@ -475,6 +484,140 @@
     return null;
   }
 
+  function setActiveTab(tab) {
+    const targetTab = tab || 'all';
+    activeTab = targetTab;
+    for (const btn of dom.tabButtons) {
+      const isSelected = (btn.dataset.tab || 'all') === targetTab;
+      btn.classList.toggle('active', isSelected);
+      btn.setAttribute('aria-selected', String(isSelected));
+    }
+    render(currentData, { fromNetwork: false });
+  }
+
+  async function showBrowserNotification(title, options) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    try {
+      const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker?.ready : null;
+      if (reg && reg.showNotification) {
+        await reg.showNotification(title, options);
+        return;
+      }
+    } catch {
+      // Fall back to Notification constructor if Service Worker showNotification is unavailable.
+    }
+    try {
+      new Notification(title, options);
+    } catch {
+      // Ignore environments where window.Notification constructor is disallowed.
+    }
+  }
+
+  function triggerLocalReleaseNotification(release) {
+    if (!release) return;
+    const theatersList = Array.isArray(release.addedTheaters) ? release.addedTheaters : [];
+    const releaseKey = `${release.id || release.title || ''}::${theatersList.join(',')}::${release.detectedAt || ''}`;
+    if (notifiedReleaseKeys.has(releaseKey)) return;
+    notifiedReleaseKeys.add(releaseKey);
+
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const title = release.title || 'Karur Cinemas Release';
+    const theaterText = theatersList.length > 0 ? theatersList.join(', ') : 'Karur Cinemas';
+    const targetUrl = getBookingUrl(release);
+    const batchId = Date.now();
+
+    if (release.isDoomsday) {
+      for (let i = 1; i <= 5; i += 1) {
+        const timerId = setTimeout(() => {
+          showBrowserNotification(`🚨 URGENT (${i}/5): ${title} — Bookings LIVE!`, {
+            body: `${title} open at ${theaterText} in Karur! Book now at karurcinemas.com`,
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            tag: `doomsday-release-${batchId}-${i}`,
+            renotify: true,
+            requireInteraction: true,
+            data: { url: targetUrl },
+          });
+        }, (i - 1) * 2000);
+        localReleasePushTimers.push(timerId);
+      }
+      return;
+    }
+
+    showBrowserNotification(`🎬 New Tickets Open: ${title}`, {
+      body: `Now booking at ${theaterText} • Karur Cinemas`,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: `opening-release-${release.id || batchId}-${batchId}`,
+      renotify: true,
+      requireInteraction: false,
+      data: { url: targetUrl },
+    });
+  }
+
+  function handleNewReleasesDetected(newReleases, options = {}) {
+    if (!Array.isArray(newReleases) || newReleases.length === 0) return;
+    const summary = newReleases
+      .map((item) => {
+        const theaters =
+          Array.isArray(item.addedTheaters) && item.addedTheaters.length > 0
+            ? ` (${item.addedTheaters.join(', ')})`
+            : '';
+        return `${item.title || 'New Movie'}${theaters}`;
+      })
+      .join(' • ');
+    showToast(`New update in Karur: ${summary}`);
+    if (options.triggerLocalNotification) {
+      for (const release of newReleases) {
+        triggerLocalReleaseNotification(release);
+      }
+    }
+  }
+
+  function connectEventsStream() {
+    if (typeof EventSource === 'undefined' || eventsSource) return;
+    try {
+      eventsSource = new EventSource('/api/events');
+      eventsSource.addEventListener('scan-update', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (!payload || !payload.ok) return;
+          try {
+            localStorage.setItem(
+              CACHE_KEY,
+              JSON.stringify({
+                ok: true,
+                lastChecked: payload.lastChecked || null,
+                openings: payload.openings || [],
+              })
+            );
+          } catch {
+            // ignore storage quota limits
+          }
+          render(payload, { fromNetwork: true });
+          if (Number(payload.newAdded || 0) > 0 && Array.isArray(payload.newReleases)) {
+            handleNewReleasesDetected(payload.newReleases, { triggerLocalNotification: false });
+          }
+        } catch {
+          // ignore malformed event payload
+        }
+      });
+      eventsSource.addEventListener('local-notification-fallback', (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload && Array.isArray(payload.newReleases)) {
+            handleNewReleasesDetected(payload.newReleases, { triggerLocalNotification: true });
+          }
+        } catch {
+          // ignore malformed event payload
+        }
+      });
+    } catch {
+      eventsSource = null;
+    }
+  }
+
   async function runManualCheck() {
     if (!dom.checkNowBtn) return;
     dom.checkNowBtn.disabled = true;
@@ -485,14 +628,36 @@
         cache: 'no-store',
       });
       const result = await res.json().catch(() => null);
-      await fetchStatus();
+      if (result && result.ok && Array.isArray(result.openings)) {
+        try {
+          localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+              ok: true,
+              lastChecked: result.lastChecked || null,
+              openings: result.openings,
+            })
+          );
+        } catch {
+          // ignore storage quota limits
+        }
+        render(result, { fromNetwork: true });
+      } else {
+        await fetchStatus();
+      }
       if (result && result.ok) {
         const added = Number(result.newAdded || 0);
-        showToast(
-          added > 0
-            ? `Scan complete: ${added} new opening(s) detected!`
-            : 'Scan complete: Karur Cinemas outer listings are up to date.'
-        );
+        if (added > 0 && Array.isArray(result.newReleases) && result.newReleases.length > 0) {
+          handleNewReleasesDetected(result.newReleases, {
+            triggerLocalNotification: Number(result.subscribedCount || 0) === 0,
+          });
+        } else {
+          showToast(
+            added > 0
+              ? `Scan complete: ${added} new opening(s) detected!`
+              : 'Scan complete: Karur Cinemas outer listings are up to date.'
+          );
+        }
       }
     } catch {
       showToast('Scan queued — refreshing status.');
@@ -703,13 +868,7 @@
   function bindEvents() {
     for (const btn of dom.tabButtons) {
       btn.addEventListener('click', () => {
-        activeTab = btn.dataset.tab || 'all';
-        for (const other of dom.tabButtons) {
-          const isSelected = other === btn;
-          other.classList.toggle('active', isSelected);
-          other.setAttribute('aria-selected', String(isSelected));
-        }
-        render(currentData, { fromNetwork: false });
+        setActiveTab(btn.dataset.tab || 'all');
       });
     }
 
@@ -735,7 +894,13 @@
       // ignore invalid cache
     }
 
-    ensureServiceWorker().catch(() => {});
+    if ('Notification' in window && Notification.permission === 'granted') {
+      syncPushSubscription().catch(() => {});
+    } else {
+      ensureServiceWorker().catch(() => {});
+    }
+
+    connectEventsStream();
 
     const status = await fetchStatus();
     if (status && status.lastChecked === null) {

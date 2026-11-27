@@ -60,8 +60,77 @@ function createApp(options = {}) {
   let activeScanPromise = null;
   let testDoomsdayTimer = null;
   let activeTestPushPromise = null;
+  let activePushPromise = null;
+  const sseClients = new Set();
+  let sseHeartbeatTimer = null;
 
   initPushService();
+
+  function buildStatusPayload(nowMs = nowFn()) {
+    const prevOpenings = state.openings || [];
+    const activeOpenings = pruneExpiredOpenings(prevOpenings, nowMs);
+    if (activeOpenings.length !== prevOpenings.length) {
+      state = { ...state, openings: activeOpenings };
+      saveState(state, stateFile).catch(() => {});
+    }
+    const freshOpenings = activeOpenings.map((item) =>
+      refreshOpeningFlags(item, nowMs)
+    );
+    return {
+      ok: true,
+      lastChecked: state.lastChecked || null,
+      openings: freshOpenings,
+    };
+  }
+
+  function stopSseHeartbeatIfIdle() {
+    if (sseClients.size === 0 && sseHeartbeatTimer) {
+      clearInterval(sseHeartbeatTimer);
+      sseHeartbeatTimer = null;
+    }
+  }
+
+  function ensureSseHeartbeat() {
+    if (sseHeartbeatTimer || sseClients.size === 0) return;
+    sseHeartbeatTimer = setInterval(() => {
+      if (sseClients.size === 0) {
+        stopSseHeartbeatIfIdle();
+        return;
+      }
+      for (const clientRes of Array.from(sseClients)) {
+        try {
+          if (clientRes.writableEnded || clientRes.destroyed) {
+            sseClients.delete(clientRes);
+            continue;
+          }
+          clientRes.write(': ping\n\n');
+        } catch {
+          sseClients.delete(clientRes);
+        }
+      }
+      stopSseHeartbeatIfIdle();
+    }, 25000);
+    if (typeof sseHeartbeatTimer.unref === 'function') {
+      sseHeartbeatTimer.unref();
+    }
+  }
+
+  function broadcastSse(eventName, data) {
+    if (sseClients.size === 0) return;
+    const frame = `event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const clientRes of Array.from(sseClients)) {
+      try {
+        if (clientRes.writableEnded || clientRes.destroyed) {
+          sseClients.delete(clientRes);
+          continue;
+        }
+        clientRes.write(frame);
+      } catch {
+        sseClients.delete(clientRes);
+      }
+    }
+    stopSseHeartbeatIfIdle();
+  }
 
   function clearTestDoomsdayEntries(nowMs = nowFn()) {
     const prevOpenings = state.openings || [];
@@ -70,9 +139,17 @@ function createApp(options = {}) {
     );
     if (remaining.length !== prevOpenings.length) {
       state = { ...state, openings: remaining };
-      return saveState(state, stateFile).catch((err) => {
-        console.error('[TEST-DOOMSDAY CLEANUP ERROR]', err?.message || err);
-      });
+      return saveState(state, stateFile)
+        .then(() => {
+          broadcastSse('scan-update', {
+            ...buildStatusPayload(nowMs),
+            newAdded: 0,
+            newReleases: [],
+          });
+        })
+        .catch((err) => {
+          console.error('[TEST-DOOMSDAY CLEANUP ERROR]', err?.message || err);
+        });
     }
     return Promise.resolve();
   }
@@ -90,10 +167,11 @@ function createApp(options = {}) {
         console.warn('[SCAN WARN]', new Date().toISOString(), scanResult?.error || 'Website scan returned non-ok status');
       }
 
+      const scanNowMs = nowFn();
       const { state: nextState, newNotifications, isBaseline } = applyScanResults(
         state,
         scanResult,
-        nowFn()
+        scanNowMs
       );
       state = nextState;
       await saveState(state, stateFile);
@@ -111,6 +189,21 @@ function createApp(options = {}) {
         }
       );
 
+      const newReleases = newNotifications.map((event) => ({
+        id: event.movie?.id || '',
+        title: event.movie?.title || 'Karur Cinemas Release',
+        addedTheaters: Array.isArray(event.addedTheaters) ? [...event.addedTheaters] : [],
+        isDoomsday: Boolean(event.isDoomsday),
+        bookingUrl: event.movie?.bookingUrl || event.movie?.link || WEBSITE_URL,
+        detectedAt: event.movie?.detectedAt || state.lastChecked || '',
+      }));
+
+      broadcastSse('scan-update', {
+        ...buildStatusPayload(scanNowMs),
+        newAdded: newNotifications.length,
+        newReleases,
+      });
+
       if (newNotifications.length > 0) {
         console.log(
           '[PUSH TRIGGER]',
@@ -119,16 +212,32 @@ function createApp(options = {}) {
           newNotifications.map((n) => `${n.movie.title} (${(n.addedTheaters || []).join(', ')})`)
         );
         // Trigger push alerts once per newly added movie/theater without blocking HTTP response.
-        Promise.allSettled(
+        activePushPromise = Promise.allSettled(
           newNotifications.map((event) =>
-            pushNotifier(event, options.pushOptions).catch((err) => {
-              console.error('Push notification error:', err.message);
-            })
+            Promise.resolve()
+              .then(() => pushNotifier(event, options.pushOptions))
+              .catch((err) => {
+                console.error('Push notification error:', err?.message || err);
+                return { count: 0, results: [] };
+              })
           )
-        );
+        ).then((settled) => {
+          let totalSent = 0;
+          for (const entry of settled) {
+            if (entry.status !== 'fulfilled' || !entry.value) continue;
+            const results = Array.isArray(entry.value.results) ? entry.value.results : [];
+            for (const r of results) {
+              totalSent += Number(r?.sent || 0);
+            }
+          }
+          if (totalSent === 0) {
+            broadcastSse('local-notification-fallback', { newReleases });
+          }
+          return settled;
+        });
       }
 
-      return { state, newAdded: newNotifications.length, scanOk: Boolean(scanResult?.ok) };
+      return { state, newAdded: newNotifications.length, newReleases, scanOk: Boolean(scanResult?.ok) };
     })();
 
     try {
@@ -151,21 +260,7 @@ function createApp(options = {}) {
   app.get('/api/status', (req, res) => {
     noStoreHeaders(res);
     try {
-      const nowMs = nowFn();
-      const prevOpenings = state.openings || [];
-      const activeOpenings = pruneExpiredOpenings(prevOpenings, nowMs);
-      if (activeOpenings.length !== prevOpenings.length) {
-        state = { ...state, openings: activeOpenings };
-        saveState(state, stateFile).catch(() => {});
-      }
-      const freshOpenings = activeOpenings.map((item) =>
-        refreshOpeningFlags(item, nowMs)
-      );
-      return res.status(200).json({
-        ok: true,
-        lastChecked: state.lastChecked || null,
-        openings: freshOpenings,
-      });
+      return res.status(200).json(buildStatusPayload(nowFn()));
     } catch {
       return res.status(200).json({
         ok: true,
@@ -173,6 +268,39 @@ function createApp(options = {}) {
         openings: [],
       });
     }
+  });
+
+  // Streams real-time scan updates so New Updates refreshes immediately after any scan.
+  app.get('/api/events', (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
+    sseClients.add(res);
+    ensureSseHeartbeat();
+
+    try {
+      const initialPayload = buildStatusPayload(nowFn());
+      res.write(
+        `event: scan-update\ndata: ${JSON.stringify({
+          ...initialPayload,
+          newAdded: 0,
+          newReleases: [],
+        })}\n\n`
+      );
+    } catch {
+      // ignore initial write error
+    }
+
+    req.on('close', () => {
+      sseClients.delete(res);
+      stopSseHeartbeatIfIdle();
+    });
   });
 
   // Supports both GET and POST, updating lastChecked in data/state.json and returning { ok: true, lastChecked }.
@@ -189,10 +317,17 @@ function createApp(options = {}) {
         result.newAdded,
         'new added'
       );
+      const subscribedCount = Array.isArray(options.pushOptions?.subscriptions)
+        ? options.pushOptions.subscriptions.length
+        : loadSubscriptionsSync().length;
+      const statusPayload = buildStatusPayload(nowFn());
       return res.status(200).json({
         ok: true,
         lastChecked: result.state.lastChecked,
         newAdded: result.newAdded,
+        newReleases: result.newReleases || [],
+        openings: statusPayload.openings,
+        subscribedCount,
       });
     } catch (err) {
       console.error('[CHECK-NOW ERROR]', new Date().toISOString(), err?.message || 'Scan failed');
@@ -314,6 +449,22 @@ function createApp(options = {}) {
       });
 
       const freshOpenings = state.openings.map((item) => refreshOpeningFlags(item, nowMs));
+      broadcastSse('scan-update', {
+        ok: true,
+        lastChecked: state.lastChecked || null,
+        openings: freshOpenings,
+        newAdded: 1,
+        newReleases: [
+          {
+            id: testOpening.id,
+            title: testOpening.title,
+            addedTheaters: [...testOpening.theaters],
+            isDoomsday: true,
+            bookingUrl: testOpening.bookingUrl,
+            detectedAt: testOpening.detectedAt,
+          },
+        ],
+      });
       return res.status(200).json({
         ok: true,
         opening: refreshOpeningFlags(testOpening, nowMs),
@@ -347,6 +498,18 @@ function createApp(options = {}) {
       clearTimeout(testDoomsdayTimer);
       testDoomsdayTimer = null;
     }
+    if (sseHeartbeatTimer) {
+      clearInterval(sseHeartbeatTimer);
+      sseHeartbeatTimer = null;
+    }
+    for (const clientRes of Array.from(sseClients)) {
+      try {
+        clientRes.end();
+      } catch {
+        // ignore
+      }
+    }
+    sseClients.clear();
   }
 
   return {
@@ -354,6 +517,7 @@ function createApp(options = {}) {
     performScan,
     getState: () => state,
     clearTimers,
+    awaitPush: () => activePushPromise,
     awaitTestPush: () => activeTestPushPromise,
   };
 }
