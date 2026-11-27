@@ -1,0 +1,24 @@
+{
+  "name": "karur-cinemas-ticket-tracker",
+  "version": "1.0.0",
+  "description": "Karur Cinemas Ticket Tracker PWA monitoring https://karurcinemas.com with 48h/96h New Updates, Doctor Doom theme, parallel Vision/OCR fallback, and Web Push alerts.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "karur-cinemas",
+    "ticket-tracker",
+    "pwa",
+    "web-push",
+    "express"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "web-push": "^3.6.7"
+  }
+}

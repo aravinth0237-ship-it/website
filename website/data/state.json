@@ -1,0 +1,287 @@
+{
+  "lastChecked": "2026-11-27T06:09:32.500Z",
+  "openings": [
+    {
+      "id": "delivery-boy",
+      "title": "Delivery Boy",
+      "theaters": [
+        "Ellora"
+      ],
+      "screens": [
+        "Ellora 4K Dolby Atmos"
+      ],
+      "poster": "https://www.elloracinema.com/uploads/movie/MOV8204711479/t3_08772202611260929.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Ellora"
+      ]
+    },
+    {
+      "id": "niram",
+      "title": "Niram",
+      "theaters": [
+        "PonAmutha"
+      ],
+      "screens": [
+        "PonAmutha Dolby Atmos"
+      ],
+      "poster": "https://www.amuthatheatres.com/uploads/movie/MOV9264293417/t3_57672202611260859.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "PonAmutha"
+      ]
+    },
+    {
+      "id": "signal",
+      "title": "Signal",
+      "theaters": [
+        "Kavithalaya"
+      ],
+      "screens": [
+        "Kavithalaya"
+      ],
+      "poster": "https://www.kavithalaya.in/uploads/movie/MOV1804537385/t3_13436202611260950.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Kavithalaya"
+      ]
+    },
+    {
+      "id": "o-m",
+      "title": "O.M",
+      "theaters": [
+        "Ajantha",
+        "Thinnappa"
+      ],
+      "screens": [
+        "Ajantha 4K Dolby Atmos",
+        "Thinnappa Screen-1 4K Dolby Atmos"
+      ],
+      "poster": "https://www.ajanthacinema.com/uploads/movie/MOV7125501599/t3_85241202611181020.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Ajantha",
+        "Thinnappa"
+      ]
+    },
+    {
+      "id": "appa-kutty",
+      "title": "Appa Kutty",
+      "theaters": [
+        "Thinnappa"
+      ],
+      "screens": [
+        "Thinnappa Screen-2 RGB Laser Atmos"
+      ],
+      "poster": "https://s2.thinnappatheatre.com/uploads/movie/MOV8955977382/t3_08318202611170521.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Thinnappa"
+      ]
+    },
+    {
+      "id": "aakasamlo-oka-tara",
+      "title": "Aakasamlo Oka Tara",
+      "theaters": [
+        "Kavithalaya"
+      ],
+      "screens": [
+        "Kavithalaya"
+      ],
+      "poster": "https://www.kavithalaya.in/uploads/movie/MOV4534958463/t3_10284202611181626.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Kavithalaya"
+      ]
+    },
+    {
+      "id": "ramayana",
+      "title": "Ramayana",
+      "theaters": [
+        "Thinnappa",
+        "Amutha"
+      ],
+      "screens": [
+        "Amutha 4K Dolby Atmos, Thinnappa Screen-2 RGB Laser Atmos"
+      ],
+      "poster": "https://s2.thinnappatheatre.com/uploads/movie/MOV7489239183/t3_95687202611170500.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Thinnappa",
+        "Amutha"
+      ]
+    },
+    {
+      "id": "scene",
+      "title": "Scene",
+      "theaters": [
+        "Kalaiarangam"
+      ],
+      "screens": [
+        "Kalaiarangam 4K Dolby Atmos"
+      ],
+      "poster": "https://www.kcineplex.in/uploads/movie/MOV2149160447/t3_51964202610310846.jpg",
+      "link": "https://karurcinemas.com",
+      "detectedAt": "2026-11-27T06:09:32.500Z",
+      "lastSeenAt": "2026-11-27T06:09:32.500Z",
+      "isLive": true,
+      "isNew": false,
+      "newUntil": null,
+      "newTheaters": [],
+      "isDoomsday": false,
+      "notifiedTheaters": [
+        "Kalaiarangam"
+      ]
+    }
+  ],
+  "lastWebsiteMovies": [
+    {
+      "id": "delivery-boy",
+      "title": "Delivery Boy",
+      "theaters": [
+        "Ellora"
+      ],
+      "screens": [
+        "Ellora 4K Dolby Atmos"
+      ],
+      "poster": "https://www.elloracinema.com/uploads/movie/MOV8204711479/t3_08772202611260929.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "niram",
+      "title": "Niram",
+      "theaters": [
+        "PonAmutha"
+      ],
+      "screens": [
+        "PonAmutha Dolby Atmos"
+      ],
+      "poster": "https://www.amuthatheatres.com/uploads/movie/MOV9264293417/t3_57672202611260859.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "signal",
+      "title": "Signal",
+      "theaters": [
+        "Kavithalaya"
+      ],
+      "screens": [
+        "Kavithalaya"
+      ],
+      "poster": "https://www.kavithalaya.in/uploads/movie/MOV1804537385/t3_13436202611260950.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "o-m",
+      "title": "O.M",
+      "theaters": [
+        "Ajantha",
+        "Thinnappa"
+      ],
+      "screens": [
+        "Ajantha 4K Dolby Atmos",
+        "Thinnappa Screen-1 4K Dolby Atmos"
+      ],
+      "poster": "https://www.ajanthacinema.com/uploads/movie/MOV7125501599/t3_85241202611181020.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "appa-kutty",
+      "title": "Appa Kutty",
+      "theaters": [
+        "Thinnappa"
+      ],
+      "screens": [
+        "Thinnappa Screen-2 RGB Laser Atmos"
+      ],
+      "poster": "https://s2.thinnappatheatre.com/uploads/movie/MOV8955977382/t3_08318202611170521.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "aakasamlo-oka-tara",
+      "title": "Aakasamlo Oka Tara",
+      "theaters": [
+        "Kavithalaya"
+      ],
+      "screens": [
+        "Kavithalaya"
+      ],
+      "poster": "https://www.kavithalaya.in/uploads/movie/MOV4534958463/t3_10284202611181626.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "ramayana",
+      "title": "Ramayana",
+      "theaters": [
+        "Thinnappa",
+        "Amutha"
+      ],
+      "screens": [
+        "Amutha 4K Dolby Atmos, Thinnappa Screen-2 RGB Laser Atmos"
+      ],
+      "poster": "https://s2.thinnappatheatre.com/uploads/movie/MOV7489239183/t3_95687202611170500.jpg",
+      "link": "https://karurcinemas.com"
+    },
+    {
+      "id": "scene",
+      "title": "Scene",
+      "theaters": [
+        "Kalaiarangam"
+      ],
+      "screens": [
+        "Kalaiarangam 4K Dolby Atmos"
+      ],
+      "poster": "https://www.kcineplex.in/uploads/movie/MOV2149160447/t3_51964202610310846.jpg",
+      "link": "https://karurcinemas.com"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Karur Cinemas Ticket Tracker</title>
+    <meta
+      name="description"
+      content="Real-time Karur Cinemas outer ticket opening tracker across Ajantha, Ellora, Thinnappa, Amutha, PonAmutha, Kalaiarangam, and Kavithalaya."
+    />
+    <meta name="theme-color" id="meta-theme-color" content="#e50914" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="doomsday-banner" class="doomsday-banner hidden" role="alert" aria-live="assertive">
+      🚨 AVENGERS: DOOMSDAY BOOKINGS LIVE IN KARUR! 🚨
+    </div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-group">
+          <div class="brand-badge" aria-hidden="true">KC</div>
+          <div>
+            <h1 class="brand-title">Karur Cinemas Ticket Tracker</h1>
+            <p class="brand-subtitle">
+              Monitoring
+              <a
+                href="https://karurcinemas.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="source-link"
+                >https://karurcinemas.com</a
+              >
+              &bull;
+              <span id="last-checked-text">Last Checked: Ready</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button type="button" id="check-now-btn" class="btn btn-secondary">
+            Check Now
+          </button>
+          <button type="button" id="enable-notifications-btn" class="btn btn-primary">
+            Enable Notifications
+          </button>
+          <button type="button" id="test-alert-btn" class="btn btn-accent">
+            Test Alert
+          </button>
+        </div>
+      </header>
+
+      <nav class="tabs-bar" aria-label="Ticket update views" role="tablist">
+        <button
+          type="button"
+          class="tab-btn active"
+          role="tab"
+          aria-selected="true"
+          data-tab="all"
+        >
+          All Updates <span class="tab-count" id="count-all">0</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          role="tab"
+          aria-selected="false"
+          data-tab="new"
+        >
+          New Updates <span class="tab-count" id="count-new">0</span>
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          role="tab"
+          aria-selected="false"
+          data-tab="live"
+        >
+          Website Live <span class="tab-count" id="count-live">0</span>
+        </button>
+      </nav>
+
+      <div id="toast-bar" class="toast-bar hidden" role="status" aria-live="polite"></div>
+
+      <main class="main-content">
+        <section id="cards-grid" class="cards-grid" aria-live="polite"></section>
+        <section id="empty-state" class="empty-state hidden"></section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
